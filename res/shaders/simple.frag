@@ -47,11 +47,23 @@ void main()
         float L = 1 / (la + lb*d + lc*pow(d,2));
 
         // Calculate shadows
+        float soft_shadow_radius = float(ball_radius) * 1.3;
+
         vec3 light_distance = light_source[i].position - fragment_position;
         vec3 ball_distance = ball_position - fragment_position;
+        float shadow_strenght = 1.0;
         float rejection_length = length(reject(ball_distance, light_distance));
         
-        bool has_shadow = length(ball_distance) <= length(light_distance) && dot(light_distance, ball_distance) >= 0 && rejection_length <= ball_radius;
+        if (length(ball_distance) <= length(light_distance) && dot(light_distance, ball_distance) >= 0) {
+            // Full shadow
+            if (rejection_length <= ball_radius)
+                shadow_strenght = 0.0;
+            // Soft shadow
+            else if (rejection_length <= soft_shadow_radius ) {
+                float t = (rejection_length - float(ball_radius)) / (soft_shadow_radius - float(ball_radius));
+                shadow_strenght = mix(0.0, 1.0, t);
+            }
+        }
 
         // Calculate diffuse
         vec3 light_direction = normalize(light_source[i].position - fragment_position);
@@ -59,7 +71,7 @@ void main()
         // vec3 diffuse_color = vec3(255.0, 255.0, 255.0) / 255.0;
         vec3 diffuse_color = light_source[i].color / 255.0;
 
-        diffuse += diffuse_intensity * diffuse_color * L * (has_shadow? 0.0 : 1.0);
+        diffuse += diffuse_intensity * diffuse_color * L * shadow_strenght;
 
         // Calculate specular
         vec3 reflect_direction = reflect(-light_direction, normal_out);
@@ -68,7 +80,7 @@ void main()
         // vec3 specular_color = vec3(255.0, 255.0, 255.0) / 255.0;
         vec3 specular_color = light_source[i].color / 255.0;
 
-        specular += specular_intensity * specular_color * L * (has_shadow? 0.0 : 1.0);
+        specular += specular_intensity * specular_color * L * shadow_strenght;
     }
 
     // Dither
