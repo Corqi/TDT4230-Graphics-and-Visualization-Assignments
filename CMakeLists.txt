@@ -25,7 +25,7 @@ else()
     	set (PYTHON_CMD python)
     endif()
 endif()
-message("spis meg ${PYTHON_CMD}")
+message("python used: ${PYTHON_CMD}")
 
 #
 # CMake setup
