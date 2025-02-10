@@ -2,6 +2,7 @@
 
 struct LightSource {
     vec3 position;
+    vec3 color;
 };
 
 in layout(location = 0) vec3 normal;
@@ -55,7 +56,8 @@ void main()
         // Calculate diffuse
         vec3 light_direction = normalize(light_source[i].position - fragment_position);
         float diffuse_intensity = max(dot(light_direction, normal_out), 0.0);
-        vec3 diffuse_color = vec3(255.0, 255.0, 255.0) / 255.0;
+        // vec3 diffuse_color = vec3(255.0, 255.0, 255.0) / 255.0;
+        vec3 diffuse_color = light_source[i].color / 255.0;
 
         diffuse += diffuse_intensity * diffuse_color * L * (has_shadow? 0.0 : 1.0);
 
@@ -63,7 +65,8 @@ void main()
         vec3 reflect_direction = reflect(-light_direction, normal_out);
         vec3 view_direction = normalize(camera_position - fragment_position);
         float specular_intensity = pow(max(dot(view_direction, reflect_direction), 0.0), 32);
-        vec3 specular_color = vec3(255.0, 255.0, 255.0) / 255.0;
+        // vec3 specular_color = vec3(255.0, 255.0, 255.0) / 255.0;
+        vec3 specular_color = light_source[i].color / 255.0;
 
         specular += specular_intensity * specular_color * L * (has_shadow? 0.0 : 1.0);
     }

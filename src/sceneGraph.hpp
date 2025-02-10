@@ -56,6 +56,9 @@ struct SceneNode {
 
 	// The ID to easily identify nodes
 	unsigned int id;
+	
+	// Color of the light
+	glm::vec3 color;
 };
 
 SceneNode* createSceneNode();
