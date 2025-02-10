@@ -16,6 +16,11 @@ Should you forget the `--recursive` bit, just run:
 Install Microsoft Visual Studio Express and CMake.
 You may use CMake-gui or the command-line cmake to generate a Visual Studio solution.
 
+if using command-line run:
+	cd build
+	cmake -G "%NAME OF VISUAL STUDIO" ..
+then open Visual Studio and run the generated .sln file
+
 ### Linux:
 
 Make sure you have a C/C++ compiler such as  GCC, CMake and Git.
