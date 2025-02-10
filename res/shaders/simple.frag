@@ -56,6 +56,9 @@ void main()
         specular += specular_intensity * specular_color * L;
     }
 
+    // Dither
+    float noise = dither(textureCoordinates);
+
     // color = vec4(0.5 * normal + 0.5, 1.0);
-    color = vec4(ambient + diffuse + specular, 1.0);
+    color = vec4(ambient + diffuse + specular + noise, 1.0);
 }
