@@ -12,11 +12,16 @@ in layout(location = 2) vec3 fragment_position;
 uniform LightSource light_source[number_lights];
 
 uniform layout(location = 6) vec3 camera_position;
+uniform layout(location = 7) vec3 ball_position;
+uniform layout(location = 8) double ball_radius;
 
 out vec4 color;
 
 float rand(vec2 co) { return fract(sin(dot(co.xy, vec2(12.9898,78.233))) * 43758.5453); }
 float dither(vec2 uv) { return (rand(uv)*2.0-1.0) / 256.0; }
+vec3 reject(vec3 from, vec3 onto) {
+    return from - onto*dot(from, onto)/dot(onto, onto);
+}
 
 void main()
 {
@@ -40,12 +45,19 @@ void main()
         float lc = 0.003;
         float L = 1 / (la + lb*d + lc*pow(d,2));
 
+        // Calculate shadows
+        vec3 light_distance = light_source[i].position - fragment_position;
+        vec3 ball_distance = ball_position - fragment_position;
+        float rejection_length = length(reject(ball_distance, light_distance));
+        
+        bool has_shadow = length(ball_distance) <= length(light_distance) && dot(light_distance, ball_distance) >= 0 && rejection_length <= ball_radius;
+
         // Calculate diffuse
         vec3 light_direction = normalize(light_source[i].position - fragment_position);
         float diffuse_intensity = max(dot(light_direction, normal_out), 0.0);
         vec3 diffuse_color = vec3(255.0, 255.0, 255.0) / 255.0;
 
-        diffuse += diffuse_intensity * diffuse_color * L;
+        diffuse += diffuse_intensity * diffuse_color * L * (has_shadow? 0.0 : 1.0);
 
         // Calculate specular
         vec3 reflect_direction = reflect(-light_direction, normal_out);
@@ -53,7 +65,7 @@ void main()
         float specular_intensity = pow(max(dot(view_direction, reflect_direction), 0.0), 32);
         vec3 specular_color = vec3(255.0, 255.0, 255.0) / 255.0;
 
-        specular += specular_intensity * specular_color * L;
+        specular += specular_intensity * specular_color * L * (has_shadow? 0.0 : 1.0);
     }
 
     // Dither

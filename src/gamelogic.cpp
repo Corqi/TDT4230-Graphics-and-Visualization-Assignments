@@ -414,6 +414,11 @@ void renderNode(SceneNode* node) {
     glUniformMatrix3fv(5, 1, GL_FALSE, glm::value_ptr(normalMatrix));
     // Camera position
     glUniform3fv(6, 1, glm::value_ptr(cameraPosition));
+    // Ball position
+    // Make sure it's not relative
+    glm::vec3 ballPosition = glm::vec3(ballNode->modelMatrix * glm::vec4(0.0, 0.0, 0.0, 1.0));
+    glUniform3fv(7, 1, glm::value_ptr(ballPosition));
+    glUniform1d(8, ballRadius);
 
     switch(node->nodeType) {
         case GEOMETRY:
