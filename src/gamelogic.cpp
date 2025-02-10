@@ -38,6 +38,11 @@ SceneNode* boxNode;
 SceneNode* ballNode;
 SceneNode* padNode;
 
+//Light Nodes
+SceneNode* padLightNode;
+SceneNode* cornerLightNode1;
+SceneNode* cornerLightNode2;
+
 double ballRadius = 3.0f;
 
 // These are heap allocated, because they should not be initialised at the start of the program
@@ -126,10 +131,22 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     boxNode  = createSceneNode();
     padNode  = createSceneNode();
     ballNode = createSceneNode();
+    padLightNode = createSceneNode();
+    padLightNode->nodeType = POINT_LIGHT;
+    padLightNode->id = 0;
+    cornerLightNode1 = createSceneNode();
+    cornerLightNode1->nodeType = POINT_LIGHT;
+    cornerLightNode1->id = 1;
+    cornerLightNode2 = createSceneNode();
+    cornerLightNode2->nodeType = POINT_LIGHT;
+    cornerLightNode2->id = 2;
 
     rootNode->children.push_back(boxNode);
     rootNode->children.push_back(padNode);
     rootNode->children.push_back(ballNode);
+    rootNode->children.push_back(cornerLightNode1);
+    rootNode->children.push_back(cornerLightNode2);
+    padNode->children.push_back(padLightNode);
 
     boxNode->vertexArrayObjectID  = boxVAO;
     boxNode->VAOIndexCount        = box.indices.size();
@@ -324,6 +341,19 @@ void updateFrame(GLFWwindow* window) {
     // Move and rotate various SceneNodes
     boxNode->position = { 0, -10, -80 };
 
+    // Set positions of static lights
+    cornerLightNode1->position  = {
+            boxNode->position.x - (boxDimensions.x/2) + 20,
+            boxNode->position.y + (boxDimensions.y/2) - 10,
+            boxNode->position.z - (boxDimensions.z/2) + 5
+        };
+        
+        cornerLightNode2->position  = {
+            boxNode->position.x + (boxDimensions.x/2) - 20,
+            boxNode->position.y - (boxDimensions.y/2) + 10,
+            boxNode->position.z - (boxDimensions.z/2) + 5
+        };
+
     ballNode->position = ballPosition;
     ballNode->scale = glm::vec3(ballRadius);
     ballNode->rotation = { 0, totalElapsedTime*2, 0 };
@@ -334,14 +364,21 @@ void updateFrame(GLFWwindow* window) {
         boxNode->position.z - (boxDimensions.z/2) + (padDimensions.z/2) + (1 - padPositionZ) * (boxDimensions.z - padDimensions.z)
     };
 
-    updateNodeTransformations(rootNode, VP);
+    // Move padLight above padNode
+    padLightNode->position = {
+        padNode->position.x, 
+        padNode->position.y + 6, 
+        padNode->position.z    
+    };
+
+    updateNodeTransformations(rootNode, glm::identity<glm::mat4>(), VP);
 
 
 
 
 }
 
-void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar) {
+void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar, glm::mat4 viewTransformation) {
     glm::mat4 transformationMatrix =
               glm::translate(node->position)
             * glm::translate(node->referencePoint)
@@ -351,7 +388,8 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
             * glm::scale(node->scale)
             * glm::translate(-node->referencePoint);
 
-    node->currentTransformationMatrix = transformationThusFar * transformationMatrix;
+    node->currentTransformationMatrix = viewTransformation * transformationThusFar * transformationMatrix;
+    node->modelMatrix = transformationThusFar * transformationMatrix;
 
     switch(node->nodeType) {
         case GEOMETRY: break;
@@ -360,12 +398,18 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
     }
 
     for(SceneNode* child : node->children) {
-        updateNodeTransformations(child, node->currentTransformationMatrix);
+        updateNodeTransformations(child, node->modelMatrix, viewTransformation);
     }
 }
 
 void renderNode(SceneNode* node) {
+    // MVP
     glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
+    // Model matrix
+    glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(node->modelMatrix));
+    // Normals matrix
+    glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(node->modelMatrix)));
+    glUniformMatrix3fv(5, 1, GL_FALSE, glm::value_ptr(normalMatrix));
 
     switch(node->nodeType) {
         case GEOMETRY:
@@ -374,7 +418,16 @@ void renderNode(SceneNode* node) {
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
             }
             break;
-        case POINT_LIGHT: break;
+        case POINT_LIGHT:
+            // Calculate light position
+            glm::vec3 lightPosition;
+            if (node->id == 0)
+                lightPosition = glm::vec3(padNode->modelMatrix  * glm::vec4(0.0, 6.0, 0.0, 1.0));
+            else
+                lightPosition = glm::vec3(node->modelMatrix  * glm::vec4(0.0, 0.0, 0.0, 1.0));
+
+            glUniform3fv(shader->getUniformFromName("light_source[" + std::to_string(node->id) + "].position"), 1, glm::value_ptr(lightPosition)); 
+            break;
         case SPOT_LIGHT: break;
     }
 
