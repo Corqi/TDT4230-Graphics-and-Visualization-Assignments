@@ -11,6 +11,8 @@ in layout(location = 2) vec3 fragment_position;
 #define number_lights 3
 uniform LightSource light_source[number_lights];
 
+uniform layout(location = 6) vec3 camera_position;
+
 out vec4 color;
 
 float rand(vec2 co) { return fract(sin(dot(co.xy, vec2(12.9898,78.233))) * 43758.5453); }
@@ -28,6 +30,7 @@ void main()
 
     // Diffuse and Specular
     vec3 diffuse;
+    vec3 specular;
 
     for (int i = 0; i < number_lights; i++) {
         // Calculate diffuse
@@ -36,8 +39,16 @@ void main()
         vec3 diffuse_color = vec3(255.0, 255.0, 255.0) / 255.0;
 
         diffuse += diffuse_intensity * diffuse_color;
+
+        // Calculate specular
+        vec3 reflect_direction = reflect(-light_direction, normal_out);
+        vec3 view_direction = normalize(camera_position - fragment_position);
+        float specular_intensity = pow(max(dot(view_direction, reflect_direction), 0.0), 32);
+        vec3 specular_color = vec3(255.0, 255.0, 255.0) / 255.0;
+
+        specular += specular_intensity * specular_color;
     }
 
     // color = vec4(0.5 * normal + 0.5, 1.0);
-    color = vec4(ambient + diffuse, 1.0);
+    color = vec4(ambient + diffuse + specular, 1.0);
 }

@@ -56,6 +56,8 @@ const glm::vec3 padDimensions(30, 3, 40);
 glm::vec3 ballPosition(0, ballRadius + padDimensions.y, boxDimensions.z / 2);
 glm::vec3 ballDirection(1, 1, 0.2f);
 
+glm::vec3 cameraPosition;
+
 CommandLineOptions options;
 
 bool hasStarted        = false;
@@ -327,7 +329,7 @@ void updateFrame(GLFWwindow* window) {
 
     glm::mat4 projection = glm::perspective(glm::radians(80.0f), float(windowWidth) / float(windowHeight), 0.1f, 350.f);
 
-    glm::vec3 cameraPosition = glm::vec3(0, 2, -20);
+    cameraPosition = glm::vec3(0, 2, -20);
 
     // Some math to make the camera move in a nice way
     float lookRotation = -0.6 / (1 + exp(-5 * (padPositionX-0.5))) + 0.3;
@@ -410,6 +412,8 @@ void renderNode(SceneNode* node) {
     // Normals matrix
     glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(node->modelMatrix)));
     glUniformMatrix3fv(5, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+    // Camera position
+    glUniform3fv(6, 1, glm::value_ptr(cameraPosition));
 
     switch(node->nodeType) {
         case GEOMETRY:
