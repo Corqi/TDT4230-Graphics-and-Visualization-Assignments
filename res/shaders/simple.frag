@@ -33,12 +33,19 @@ void main()
     vec3 specular;
 
     for (int i = 0; i < number_lights; i++) {
+        // Calculate attentuation
+        float d = length(light_source[i].position - fragment_position);
+        float la = 0.01;
+        float lb = 0.005;
+        float lc = 0.003;
+        float L = 1 / (la + lb*d + lc*pow(d,2));
+
         // Calculate diffuse
         vec3 light_direction = normalize(light_source[i].position - fragment_position);
         float diffuse_intensity = max(dot(light_direction, normal_out), 0.0);
         vec3 diffuse_color = vec3(255.0, 255.0, 255.0) / 255.0;
 
-        diffuse += diffuse_intensity * diffuse_color;
+        diffuse += diffuse_intensity * diffuse_color * L;
 
         // Calculate specular
         vec3 reflect_direction = reflect(-light_direction, normal_out);
@@ -46,7 +53,7 @@ void main()
         float specular_intensity = pow(max(dot(view_direction, reflect_direction), 0.0), 32);
         vec3 specular_color = vec3(255.0, 255.0, 255.0) / 255.0;
 
-        specular += specular_intensity * specular_color;
+        specular += specular_intensity * specular_color * L;
     }
 
     // color = vec4(0.5 * normal + 0.5, 1.0);
