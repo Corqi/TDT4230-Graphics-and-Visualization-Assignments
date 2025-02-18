@@ -16,6 +16,8 @@ uniform layout(location = 6) vec3 camera_position;
 uniform layout(location = 7) vec3 ball_position;
 uniform layout(location = 8) double ball_radius;
 
+uniform layout(location = 9) bool is_UI;
+
 out vec4 color;
 
 float rand(vec2 co) { return fract(sin(dot(co.xy, vec2(12.9898,78.233))) * 43758.5453); }
@@ -23,20 +25,15 @@ float dither(vec2 uv) { return (rand(uv)*2.0-1.0) / 256.0; }
 vec3 reject(vec3 from, vec3 onto) {
     return from - onto*dot(from, onto)/dot(onto, onto);
 }
-
-void main()
-{
-    // Normalize normals 2nd time
-    vec3 normal_out = normalize(normal);
-
+vec4 calculateLight(vec3 normal_out){
     // Ambient
     float ambient_intensity = 0.1;
     vec3 ambient_color = vec3(255.0, 255.0, 255.0);
     vec3 ambient = (ambient_color / 255.0) * ambient_intensity;
 
     // Diffuse and Specular
-    vec3 diffuse;
-    vec3 specular;
+    vec3 diffuse = vec3(0.0, 0.0, 0.0);
+    vec3 specular = vec3(0.0, 0.0, 0.0);
 
     for (int i = 0; i < number_lights; i++) {
         // Calculate attentuation
@@ -88,4 +85,20 @@ void main()
 
     // color = vec4(0.5 * normal + 0.5, 1.0);
     color = vec4(ambient + diffuse + specular + noise, 1.0);
+
+    return color;
+}
+
+void main()
+{
+    // Normalize normals 2nd time
+    vec3 normal_out = normalize(normal);
+
+    if (is_UI) {
+        color = vec4(1.0, 1.0, 1.0, 1.0);
+    }
+    else {
+        color = calculateLight(normal_out);
+    }
+    
 }

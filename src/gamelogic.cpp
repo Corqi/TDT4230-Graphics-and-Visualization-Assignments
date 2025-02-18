@@ -43,6 +43,8 @@ SceneNode* padLightNode;
 SceneNode* cornerLightNode1;
 SceneNode* cornerLightNode2;
 
+SceneNode* textNode;
+
 double ballRadius = 3.0f;
 
 // These are heap allocated, because they should not be initialised at the start of the program
@@ -118,15 +120,22 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     shader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/simple.frag");
     shader->activate();
 
+    // Load texture
+    PNGImage fontTexture = loadPNGFile("../res/textures/charmap.png");
+
     // Create meshes
     Mesh pad = cube(padDimensions, glm::vec2(30, 40), true);
     Mesh box = cube(boxDimensions, glm::vec2(90), true, true);
     Mesh sphere = generateSphere(1.0, 40, 40);
+    // Create text mesh
+    unsigned int textureID = generateTextureID(fontTexture);
+    Mesh text = generateTextGeometryBuffer("abc", float(39.0/29.0), 10.0);
 
     // Fill buffers
     unsigned int ballVAO = generateBuffer(sphere);
     unsigned int boxVAO  = generateBuffer(box);
     unsigned int padVAO  = generateBuffer(pad);
+    unsigned int textVAO = generateBuffer(text);
 
     // Construct scene
     rootNode = createSceneNode();
@@ -145,6 +154,12 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     cornerLightNode2->nodeType = POINT_LIGHT;
     cornerLightNode2->id = 2;
     cornerLightNode2->color = glm::vec3(0.0, 0.0, 255.0 );
+    textNode = createSceneNode();
+    textNode->nodeType = UI;
+    textNode->textureID = textureID;
+    //Offset for camera position
+    textNode->position = glm::vec3(0.0, 0.0, -30.0);
+
 
 
     rootNode->children.push_back(boxNode);
@@ -152,6 +167,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     rootNode->children.push_back(ballNode);
     rootNode->children.push_back(cornerLightNode1);
     rootNode->children.push_back(cornerLightNode2);
+    rootNode->children.push_back(textNode);
     padNode->children.push_back(padLightNode);
 
     boxNode->vertexArrayObjectID  = boxVAO;
@@ -163,6 +179,8 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     ballNode->vertexArrayObjectID = ballVAO;
     ballNode->VAOIndexCount       = sphere.indices.size();
 
+    textNode->vertexArrayObjectID = textVAO;
+    textNode->VAOIndexCount       = text.indices.size();
 
 
 
@@ -348,30 +366,30 @@ void updateFrame(GLFWwindow* window) {
     boxNode->position = { 0, -10, -80 };
 
     // Set positions of static lights
-    // cornerLightNode1->position  = {
-    //         boxNode->position.x - (boxDimensions.x/2) + 20,
-    //         boxNode->position.y + (boxDimensions.y/2) - 10,
-    //         boxNode->position.z - (boxDimensions.z/2) + 5
-    //     };
+    cornerLightNode1->position  = {
+            boxNode->position.x - (boxDimensions.x/2) + 20,
+            boxNode->position.y + (boxDimensions.y/2) - 10,
+            boxNode->position.z - (boxDimensions.z/2) + 5
+        };
         
-    //     cornerLightNode2->position  = {
-    //         boxNode->position.x + (boxDimensions.x/2) - 20,
-    //         boxNode->position.y - (boxDimensions.y/2) + 10,
-    //         boxNode->position.z - (boxDimensions.z/2) + 5
-    //     };
+    cornerLightNode2->position  = {
+        boxNode->position.x + (boxDimensions.x/2) - 20,
+        boxNode->position.y - (boxDimensions.y/2) + 10,
+        boxNode->position.z - (boxDimensions.z/2) + 5
+    };
     
     // Alternative positions for colored shadows
-    cornerLightNode1->position  = {
-        boxNode->position.x - 10,
-        boxNode->position.y - 37.5,
-        boxNode->position.z 
-    };
+    // cornerLightNode1->position  = {
+    //     boxNode->position.x - 10,
+    //     boxNode->position.y - 37.5,
+    //     boxNode->position.z 
+    // };
     
-    cornerLightNode2->position  = {
-        boxNode->position.x + 10,
-        boxNode->position.y - 37.5,
-        boxNode->position.z
-    };
+    // cornerLightNode2->position  = {
+    //     boxNode->position.x + 10,
+    //     boxNode->position.y - 37.5,
+    //     boxNode->position.z
+    // };
 
     ballNode->position = ballPosition;
     ballNode->scale = glm::vec3(ballRadius);
@@ -389,6 +407,8 @@ void updateFrame(GLFWwindow* window) {
         padNode->position.y + 6, 
         padNode->position.z    
     };
+
+    
 
     updateNodeTransformations(rootNode, glm::identity<glm::mat4>(), VP);
 
@@ -436,6 +456,8 @@ void renderNode(SceneNode* node) {
     glm::vec3 ballPosition = glm::vec3(ballNode->modelMatrix * glm::vec4(0.0, 0.0, 0.0, 1.0));
     glUniform3fv(7, 1, glm::value_ptr(ballPosition));
     glUniform1d(8, ballRadius);
+    // Textures settings
+    glUniform1i(9, false);
 
     switch(node->nodeType) {
         case GEOMETRY:
@@ -457,6 +479,14 @@ void renderNode(SceneNode* node) {
     
             break;
         case SPOT_LIGHT: break;
+        case UI:
+            glUniform1i(9, true);
+            
+            if (node->vertexArrayObjectID != -1) {
+                glBindVertexArray(node->vertexArrayObjectID);
+                glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+            }
+            break;
     }
 
     for(SceneNode* child : node->children) {

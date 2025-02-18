@@ -11,3 +11,5 @@ typedef struct PNGImage {
 } PNGImage;
 
 PNGImage loadPNGFile(std::string fileName);
+
+unsigned int generateTextureID(PNGImage texture);

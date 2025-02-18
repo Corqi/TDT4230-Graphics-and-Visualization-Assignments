@@ -1,5 +1,7 @@
 #include "imageLoader.hpp"
 #include <iostream>
+#include <GLFW/glfw3.h>
+#include <glad/glad.h>
 
 // Original source: https://raw.githubusercontent.com/lvandeve/lodepng/master/examples/example_decode.cpp
 PNGImage loadPNGFile(std::string fileName)
@@ -38,4 +40,22 @@ PNGImage loadPNGFile(std::string fileName)
 
 	return image;
 
+}
+
+unsigned int generateTextureID(PNGImage image){
+	unsigned int textureID;
+
+	// generate texture
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 
+				image.width, image.height, 0, 
+				GL_RGBA, GL_UNSIGNED_BYTE, image.pixels.data());
+	
+	// minimize undersampling and oversampling
+	glGenerateMipmap(GL_TEXTURE_2D);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+
+	return textureID;
 }

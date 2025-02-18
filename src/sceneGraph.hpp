@@ -14,7 +14,7 @@
 #include <fstream>
 
 enum SceneNodeType {
-	GEOMETRY, POINT_LIGHT, SPOT_LIGHT
+	GEOMETRY, POINT_LIGHT, SPOT_LIGHT, UI
 };
 
 struct SceneNode {
@@ -59,6 +59,9 @@ struct SceneNode {
 	
 	// Color of the light
 	glm::vec3 color;
+
+	// Store texture ID
+	unsigned int textureID;
 };
 
 SceneNode* createSceneNode();
