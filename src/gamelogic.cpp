@@ -129,7 +129,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     Mesh sphere = generateSphere(1.0, 40, 40);
     // Create text mesh
     unsigned int textureID = generateTextureID(fontTexture);
-    Mesh text = generateTextGeometryBuffer("abc", float(39.0/29.0), 10.0);
+    Mesh text = generateTextGeometryBuffer("Press left click to start", float(39.0/29.0), 600.0);
 
     // Fill buffers
     unsigned int ballVAO = generateBuffer(sphere);
@@ -158,7 +158,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     textNode->nodeType = UI;
     textNode->textureID = textureID;
     //Offset for camera position
-    textNode->position = glm::vec3(0.0, 0.0, -30.0);
+    textNode->position = glm::vec3(windowWidth/2 - 300, windowHeight - 50, 0.0);
 
 
 
@@ -411,10 +411,14 @@ void updateFrame(GLFWwindow* window) {
     
 
     updateNodeTransformations(rootNode, glm::identity<glm::mat4>(), VP);
+    
+    //Calculate orthographic projection at (0,0)
+    glm::mat4 orthoProjection = glm::ortho(0.0f, float(windowWidth),
+                                           0.0f, float(windowHeight),
+                                          -1.0f, 1.0f);
 
-
-
-
+    //Update UI elements
+    updateNodeTransformations(textNode, glm::identity<glm::mat4>(), orthoProjection); 
 }
 
 void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar, glm::mat4 viewTransformation) {
@@ -438,7 +442,7 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar,
 
     for(SceneNode* child : node->children) {
         updateNodeTransformations(child, node->modelMatrix, viewTransformation);
-    }
+    }                     
 }
 
 void renderNode(SceneNode* node) {
@@ -481,7 +485,8 @@ void renderNode(SceneNode* node) {
         case SPOT_LIGHT: break;
         case UI:
             glUniform1i(9, true);
-            
+            glBindTextureUnit(0, node->textureID);
+
             if (node->vertexArrayObjectID != -1) {
                 glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);

@@ -18,6 +18,8 @@ uniform layout(location = 8) double ball_radius;
 
 uniform layout(location = 9) bool is_UI;
 
+layout(binding = 0) uniform sampler2D textureSample;
+
 out vec4 color;
 
 float rand(vec2 co) { return fract(sin(dot(co.xy, vec2(12.9898,78.233))) * 43758.5453); }
@@ -95,7 +97,8 @@ void main()
     vec3 normal_out = normalize(normal);
 
     if (is_UI) {
-        color = vec4(1.0, 1.0, 1.0, 1.0);
+        // color = vec4(1.0, 1.0, 1.0, 1.0);
+        color = texture(textureSample, textureCoordinates);
     }
     else {
         color = calculateLight(normal_out);
