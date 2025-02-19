@@ -17,8 +17,10 @@ uniform layout(location = 7) vec3 ball_position;
 uniform layout(location = 8) double ball_radius;
 
 uniform layout(location = 9) bool is_UI;
+uniform layout(location = 10) bool is_normal_map;
 
 layout(binding = 0) uniform sampler2D textureSample;
+layout(binding = 1) uniform sampler2D normalSample;
 
 out vec4 color;
 
@@ -99,6 +101,14 @@ void main()
     if (is_UI) {
         // color = vec4(1.0, 1.0, 1.0, 1.0);
         color = texture(textureSample, textureCoordinates);
+    }
+    else if (is_normal_map){
+        // Use normal map texture
+        vec3 normalFromMap = texture(normalSample, textureCoordinates).rgb;
+        // Convert to [-1, 1] range
+        normal_out = normalize(normalFromMap * 2.0 - 1.0);
+
+        color = calculateLight(normal_out) * texture(textureSample, textureCoordinates);
     }
     else {
         color = calculateLight(normal_out);

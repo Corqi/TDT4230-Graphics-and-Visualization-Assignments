@@ -120,8 +120,10 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     shader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/simple.frag");
     shader->activate();
 
-    // Load texture
+    // Load textures
     PNGImage fontTexture = loadPNGFile("../res/textures/charmap.png");
+    PNGImage brickTexture = loadPNGFile("../res/textures/Brick03_col.png");
+    PNGImage brickNormalTexture = loadPNGFile("../res/textures/Brick03_nrm.png");
 
     // Create meshes
     Mesh pad = cube(padDimensions, glm::vec2(30, 40), true);
@@ -130,6 +132,9 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     // Create text mesh
     unsigned int textureID = generateTextureID(fontTexture);
     Mesh text = generateTextGeometryBuffer("Press left click to start", float(39.0/29.0), 600.0);
+
+    unsigned int brickTextureID = generateTextureID(brickTexture);
+    unsigned int normalTextureID = generateTextureID(brickNormalTexture);
 
     // Fill buffers
     unsigned int ballVAO = generateBuffer(sphere);
@@ -140,20 +145,23 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     // Construct scene
     rootNode = createSceneNode();
     boxNode  = createSceneNode();
+    boxNode->nodeType = NORMAL_MAP;
+    boxNode->textureID = brickTextureID;
+    boxNode->normalTextureID = normalTextureID;
     padNode  = createSceneNode();
     ballNode = createSceneNode();
     padLightNode = createSceneNode();
     padLightNode->nodeType = POINT_LIGHT;
     padLightNode->id = 0;
-    padLightNode->color = glm::vec3(255.0, 0.0, 0.0 );
-    cornerLightNode1 = createSceneNode();
-    cornerLightNode1->nodeType = POINT_LIGHT;
-    cornerLightNode1->id = 1;
-    cornerLightNode1->color = glm::vec3(0.0, 255.0, 0.0 );
-    cornerLightNode2 = createSceneNode();
-    cornerLightNode2->nodeType = POINT_LIGHT;
-    cornerLightNode2->id = 2;
-    cornerLightNode2->color = glm::vec3(0.0, 0.0, 255.0 );
+    padLightNode->color = glm::vec3(255.0, 255.0, 255.0 );
+    // cornerLightNode1 = createSceneNode();
+    // cornerLightNode1->nodeType = POINT_LIGHT;
+    // cornerLightNode1->id = 1;
+    // cornerLightNode1->color = glm::vec3(0.0, 255.0, 0.0 );
+    // cornerLightNode2 = createSceneNode();
+    // cornerLightNode2->nodeType = POINT_LIGHT;
+    // cornerLightNode2->id = 2;
+    // cornerLightNode2->color = glm::vec3(0.0, 0.0, 255.0 );
     textNode = createSceneNode();
     textNode->nodeType = UI;
     textNode->textureID = textureID;
@@ -165,8 +173,8 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     rootNode->children.push_back(boxNode);
     rootNode->children.push_back(padNode);
     rootNode->children.push_back(ballNode);
-    rootNode->children.push_back(cornerLightNode1);
-    rootNode->children.push_back(cornerLightNode2);
+    // rootNode->children.push_back(cornerLightNode1);
+    // rootNode->children.push_back(cornerLightNode2);
     rootNode->children.push_back(textNode);
     padNode->children.push_back(padLightNode);
 
@@ -366,17 +374,17 @@ void updateFrame(GLFWwindow* window) {
     boxNode->position = { 0, -10, -80 };
 
     // Set positions of static lights
-    cornerLightNode1->position  = {
-            boxNode->position.x - (boxDimensions.x/2) + 20,
-            boxNode->position.y + (boxDimensions.y/2) - 10,
-            boxNode->position.z - (boxDimensions.z/2) + 5
-        };
+    // cornerLightNode1->position  = {
+    //         boxNode->position.x - (boxDimensions.x/2) + 20,
+    //         boxNode->position.y + (boxDimensions.y/2) - 10,
+    //         boxNode->position.z - (boxDimensions.z/2) + 5
+    //     };
         
-    cornerLightNode2->position  = {
-        boxNode->position.x + (boxDimensions.x/2) - 20,
-        boxNode->position.y - (boxDimensions.y/2) + 10,
-        boxNode->position.z - (boxDimensions.z/2) + 5
-    };
+    // cornerLightNode2->position  = {
+    //     boxNode->position.x + (boxDimensions.x/2) - 20,
+    //     boxNode->position.y - (boxDimensions.y/2) + 10,
+    //     boxNode->position.z - (boxDimensions.z/2) + 5
+    // };
     
     // Alternative positions for colored shadows
     // cornerLightNode1->position  = {
@@ -462,6 +470,7 @@ void renderNode(SceneNode* node) {
     glUniform1d(8, ballRadius);
     // Textures settings
     glUniform1i(9, false);
+    glUniform1i(10, false);
 
     switch(node->nodeType) {
         case GEOMETRY:
@@ -486,6 +495,16 @@ void renderNode(SceneNode* node) {
         case UI:
             glUniform1i(9, true);
             glBindTextureUnit(0, node->textureID);
+
+            if (node->vertexArrayObjectID != -1) {
+                glBindVertexArray(node->vertexArrayObjectID);
+                glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+            }
+            break;
+        case NORMAL_MAP:
+            glUniform1i(10, true);
+            glBindTextureUnit(0, node->textureID);
+            glBindTextureUnit(1, node->normalTextureID);
 
             if (node->vertexArrayObjectID != -1) {
                 glBindVertexArray(node->vertexArrayObjectID);
