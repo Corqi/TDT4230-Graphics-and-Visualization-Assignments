@@ -8,6 +8,7 @@ struct LightSource {
 in layout(location = 0) vec3 normal;
 in layout(location = 1) vec2 textureCoordinates;
 in layout(location = 2) vec3 fragment_position;
+in layout(location = 3) mat3 TBN_matrix;
 
 #define number_lights 3
 uniform LightSource light_source[number_lights];
@@ -106,9 +107,9 @@ void main()
         // Use normal map texture
         vec3 normalFromMap = texture(normalSample, textureCoordinates).rgb;
         // Convert to [-1, 1] range
-        normal_out = normalize(normalFromMap * 2.0 - 1.0);
+        normal_out = normalize(TBN_matrix * (normalFromMap * 2.0 - 1.0));
 
-        color = calculateLight(normal_out) * texture(textureSample, textureCoordinates);
+        color =  calculateLight(normal_out) * texture(textureSample, textureCoordinates);
     }
     else {
         color = calculateLight(normal_out);

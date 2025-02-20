@@ -27,6 +27,9 @@ unsigned int generateBuffer(Mesh &mesh) {
         generateAttribute(2, 2, mesh.textureCoordinates, false);
     }
 
+    generateAttribute(3, 3, mesh.tangents, false);
+    generateAttribute(4, 3, mesh.bitangents, false);
+    
     unsigned int indexBufferID;
     glGenBuffers(1, &indexBufferID);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
